@@ -229,14 +229,20 @@
   /** ログや HTML などの自由テキストから秘密情報らしき値を除く */
   function redactText(s, { urls = true } = {}) {
     let t = String(s ?? '');
-    if (urls) t = t.replace(/https?:\/\/[^\s"'<>`)\]]+/g, (m) => redactUrl(m));
+    if (urls) {
+      // スタックトレースの "URL:行:列" は行・列を URL から切り離してから扱う
+      t = t.replace(/https?:\/\/[^\s"'<>`)\]]+/g, (m) => {
+        const pos = m.match(/(:\d+){1,2}$/);
+        return pos ? redactUrl(m.slice(0, -pos[0].length)) + pos[0] : redactUrl(m);
+      });
+    }
     return t
       .replace(/\beyJ[A-Za-z0-9_-]{5,}\.[A-Za-z0-9_-]{5,}\.[A-Za-z0-9_-]{5,}/g, `[${REDACTED}_JWT]`)
       .replace(/\b(Bearer|Basic|token)\s+[A-Za-z0-9._~+/=-]{8,}/gi, `$1 [${REDACTED}]`)
       .replace(/\b(AKIA|ASIA)[0-9A-Z]{16}\b/g, `[${REDACTED}_AWS_KEY]`)
       .replace(/\b(gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,})\b/g, `[${REDACTED}_GITHUB_TOKEN]`)
       .replace(
-        /((?:password|passwd|pwd|secret|token|api[_-]?key|access[_-]?key|client[_-]?secret|authorization|session(?:[_-]?id)?|csrf[_-]?token|cookie)["']?\s*[:=]\s*["']?)([^"'\s,;&}<]{3,})/gi,
+        /((?:password|passwd|pwd|secret|token|api[_-]?key|access[_-]?key|client[_-]?secret|authorization|session(?:[_-]?id)?|csrf[_-]?token|cookie)["']?\s*[:=]\s*["']?)(?!\[?REDACTED)([^"'\s,;&}<]{3,})/gi,
         `$1[${REDACTED}]`,
       )
       .replace(/([A-Za-z0-9._%+-])[A-Za-z0-9._%+-]*@([A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,})/g, '$1***@$2');

@@ -125,6 +125,12 @@ test('redactText はトークン・鍵・メールをマスクする', () => {
   assert.ok(t.includes('t***@example.co.jp'));
 });
 
+test('redactText はスタックトレースの行・列を壊さず、二重にマスクしない', () => {
+  const t = G.redactText('Error: boom\n    at http://localhost:4567/app?token=abc&tab=2:12:28');
+  assert.ok(t.endsWith('http://localhost:4567/app?token=REDACTED&tab=2:12:28'), t);
+  assert.equal(G.redactText('token=REDACTED'), 'token=REDACTED');
+});
+
 test('validateDiag は不正な形を受け流す', () => {
   assert.deepEqual(G.validateDiag(null), { logs: [], net: [] });
   assert.deepEqual(G.validateDiag({ logs: 'x', net: {} }), { logs: [], net: [] });
