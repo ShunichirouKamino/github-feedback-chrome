@@ -17,6 +17,7 @@ const files = [
   'src/lib.js',
   'src/overlay.js',
   'src/hook.js',
+  'LICENSE',
 ].filter(Boolean);
 for (const f of files) if (!fs.existsSync(path.join(root, f))) errors.push(`missing file: ${f}`);
 

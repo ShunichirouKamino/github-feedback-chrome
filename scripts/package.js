@@ -12,7 +12,7 @@ fs.mkdirSync(dist, { recursive: true });
 const out = path.join(dist, `github-feedback-${version}.zip`);
 fs.rmSync(out, { force: true });
 
-const include = ['manifest.json', 'icons', 'src'];
+const include = ['manifest.json', 'LICENSE', 'icons', 'src'];
 if (process.platform === 'win32') {
   // PowerShell 5.1 の Compress-Archive はパス区切りが \ になるため、Windows 標準の bsdtar を使う
   // Git for Windows の GNU tar が先に見つかることがあるので System32 のものを明示する
