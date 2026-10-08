@@ -233,7 +233,7 @@
     const { matched } = resolveRepos();
     const rule = matched?.repo === repo ? matched : config.rules.find((r) => r.repo === repo);
     const env = rule?.env || guessEnv();
-    const labels = (rule?.labels ?? config.defaultLabels ?? '').trim();
+    const labels = (rule?.labels || config.defaultLabels || '').trim();
     const firstLine = comment.split('\n')[0].slice(0, 80);
     const title = titleIn.value.trim() || (env ? `[${env}] ${firstLine}` : firstLine);
 

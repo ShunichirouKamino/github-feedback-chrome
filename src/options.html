@@ -10,7 +10,13 @@
     h2 { font-size: 15px; margin-top: 28px; }
     p.note { color: #59636e; font-size: 12px; margin: 4px 0 10px; }
     input { width: 100%; padding: 6px 8px; border: 1px solid #d0d7de; border-radius: 6px; font: inherit; box-sizing: border-box; }
-    .field { display: grid; grid-template-columns: 160px 1fr; gap: 8px; align-items: center; margin: 8px 0; }
+    .field { display: grid; grid-template-columns: 160px 1fr; gap: 8px; align-items: start; margin: 12px 0; }
+    .field label { padding-top: 7px; font-weight: 600; }
+    .field p.note { margin: 4px 0 0; }
+    dl.cols { display: grid; grid-template-columns: 140px 1fr; gap: 6px 12px; font-size: 12px; color: #59636e;
+              margin: 12px 0 0; padding: 12px; border: 1px solid #d0d7de; border-radius: 6px; }
+    dl.cols dt { font-weight: 600; }
+    dl.cols dd { margin: 0; }
     table { width: 100%; border-collapse: collapse; }
     th { text-align: left; font-size: 12px; color: #59636e; font-weight: 600; padding: 4px; }
     td { padding: 4px; }
@@ -29,19 +35,51 @@
   <h1>github-feedback 設定</h1>
 
   <h2>基本</h2>
-  <div class="field"><label for="githubBase">GitHub URL</label><input id="githubBase" placeholder="https://github.com"></div>
-  <div class="field"><label for="defaultRepo">デフォルトの起票先</label><input id="defaultRepo" placeholder="owner/repo"></div>
-  <div class="field"><label for="defaultLabels">デフォルトのラベル</label><input id="defaultLabels" placeholder="feedback"></div>
-  <p class="note">GitHub Enterprise Server の場合は GitHub URL を変更してください。ラベルは対象リポジトリで Triage 以上の権限があるときだけ反映されます。</p>
+  <div class="field">
+    <label for="githubBase">GitHub のホスト</label>
+    <div>
+      <input id="githubBase" placeholder="https://github.com">
+      <p class="note">GitHub サーバーの URL です。github.com（Enterprise Cloud を含む）なら <code>https://github.com</code> のままにしてください。
+        自社サーバーで動かす GitHub Enterprise Server を使う場合だけ、<code>https://ghe.example.co.jp</code> のように変更します。</p>
+    </div>
+  </div>
+  <div class="field">
+    <label for="defaultRepo">デフォルトの起票先</label>
+    <div>
+      <input id="defaultRepo" placeholder="owner/repo">
+      <p class="note">下の「ホストごとの振り分け」のどれにも一致しなかったときに起票するリポジトリです。
+        <code>owner/repo</code> の形式か、リポジトリの URL をそのまま貼り付けてください。振り分けルールだけで足りるなら空欄で構いません。</p>
+    </div>
+  </div>
+  <div class="field">
+    <label for="defaultLabels">デフォルトのラベル</label>
+    <div>
+      <input id="defaultLabels" placeholder="feedback">
+      <p class="note">デフォルトの起票先に起票するときに付けるラベルです（カンマ区切り）。
+        リポジトリに存在しないラベルや、Triage 以上の権限がない場合は付きません。</p>
+    </div>
+  </div>
 
   <h2>ホストごとの振り分け</h2>
-  <p class="note">上から順にホスト名（ポート付き）と照合し、最初に一致したルールを使います。<code>*</code> はワイルドカードです。<br>
-    例: <code>localhost:*</code> / <code>*.stg.example.com</code> / <code>d1234abcd.cloudfront.net</code></p>
+  <p class="note">開いている画面のホスト名（ポート付き）を上から順に照合し、最初に一致したルールの起票先を使います。</p>
   <table>
-    <thead><tr><th>ホストのパターン</th><th>リポジトリ (owner/repo)</th><th>環境名</th><th>ラベル (カンマ区切り)</th><th></th></tr></thead>
+    <thead><tr><th>ホストのパターン</th><th>起票先リポジトリ</th><th>環境名</th><th>ラベル</th><th></th></tr></thead>
     <tbody id="rules"></tbody>
   </table>
   <p><button id="add">＋ ルールを追加</button></p>
+  <dl class="cols">
+    <dt>ホストのパターン</dt>
+    <dd>対象の画面のホスト名です。<code>*</code> はワイルドカードです。
+      例: <code>localhost:*</code>（どのポートでも）/ <code>*.stg.example.com</code> / <code>d1234abcd.cloudfront.net</code></dd>
+    <dt>起票先リポジトリ</dt>
+    <dd>一致したときに起票するリポジトリです。<code>owner/repo</code> の形式か、URL をそのまま貼り付けてください。</dd>
+    <dt>環境名</dt>
+    <dd>Issue のタイトル先頭（例: <code>[stg] ボタンが押せない</code>）と、本文の「環境」欄に入ります。
+      空欄の場合、localhost なら <code>local</code>、それ以外は付きません。</dd>
+    <dt>ラベル</dt>
+    <dd>Issue に付けるラベルです（カンマ区切り。例: <code>feedback,env:stg</code>）。
+      空欄ならデフォルトのラベルを使います。Triage 以上の権限がない場合は付きません。</dd>
+  </dl>
 
   <div class="footer">
     <button id="save" class="primary">保存</button>
