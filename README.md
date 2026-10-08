@@ -116,4 +116,4 @@ store/            Chrome Web Store listing notes and assets
 
 ## License
 
-No license has been specified yet.
+[MIT](LICENSE)

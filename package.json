@@ -19,5 +19,6 @@
     "puppeteer": "^24.10.0",
     "release-it": "^19.2.4",
     "selfsigned": "^2.4.1"
-  }
+  },
+  "license": "MIT"
 }
