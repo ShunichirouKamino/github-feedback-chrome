@@ -61,10 +61,13 @@ Use [Conventional Commits](https://www.conventionalcommits.org/). Release notes 
 | `feat` | New user-visible behavior | minor |
 | `fix` | Bug fixes, including security fixes | patch |
 | `feat!` / `fix!` or a `BREAKING CHANGE:` footer | Changes that require users to reconfigure or break existing settings | major |
-| `docs` | Documentation only | none |
-| `test` | Tests only | none |
-| `refactor` / `perf` / `style` | No behavior change | none |
-| `ci` / `build` / `chore` | Workflows, tooling, dependencies | none |
+| `docs` | Documentation only | patch if nothing stronger; hidden from notes |
+| `test` | Tests only | patch if nothing stronger; hidden from notes |
+| `perf` | Performance improvements | patch |
+| `refactor` / `style` | No behavior change | patch if nothing stronger; hidden from notes |
+| `ci` / `build` / `chore` | Workflows, tooling, dependencies | patch if nothing stronger; hidden from notes |
+
+The bump is decided once per release from **all commits since the previous tag**, taking the strongest one: any breaking change → major, otherwise any `feat` → minor, otherwise patch. Commits do not add up (two `fix` commits are still one patch bump). Releasing with only `docs` / `chore` commits still produces a patch release, so hold such changes until there is something worth shipping.
 
 Scopes (optional but preferred): `overlay`, `options`, `capture`, `attach` (filling the issue page), `redact`, `hook`, `security`, `release`, `store`, `deps`.
 
