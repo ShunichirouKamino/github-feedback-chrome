@@ -61,13 +61,13 @@ Use [Conventional Commits](https://www.conventionalcommits.org/). Release notes 
 | `feat` | New user-visible behavior | minor |
 | `fix` | Bug fixes, including security fixes | patch |
 | `feat!` / `fix!` or a `BREAKING CHANGE:` footer | Changes that require users to reconfigure or break existing settings | major |
-| `docs` | Documentation only | patch if nothing stronger; hidden from notes |
-| `test` | Tests only | patch if nothing stronger; hidden from notes |
-| `perf` | Performance improvements | patch |
-| `refactor` / `style` | No behavior change | patch if nothing stronger; hidden from notes |
-| `ci` / `build` / `chore` | Workflows, tooling, dependencies | patch if nothing stronger; hidden from notes |
+| `docs` | Documentation only | none (hidden from notes) |
+| `test` | Tests only | none (hidden from notes) |
+| `perf` / `revert` | Performance improvements, reverts | patch |
+| `refactor` / `style` | No behavior change | none (hidden from notes) |
+| `ci` / `build` / `chore` | Workflows, tooling, dependencies | none (hidden from notes) |
 
-The bump is decided once per release from **all commits since the previous tag**, taking the strongest one: any breaking change → major, otherwise any `feat` → minor, otherwise patch. Commits do not add up (two `fix` commits are still one patch bump). Releasing with only `docs` / `chore` commits still produces a patch release, so hold such changes until there is something worth shipping.
+The bump is decided once per release from **all commits since the previous tag**, taking the strongest one: any breaking change → major, otherwise any `feat` → minor, otherwise any `fix` / `perf` / `revert` → patch. Commits do not add up (two `fix` commits are still one patch bump). If there are only `docs` / `chore` / `test` / `refactor` / `style` / `build` / `ci` commits, the release stops with "No new version to release". The logic is the `whatBump` function of the `conventionalcommits` preset (`node_modules/conventional-changelog-conventionalcommits/src/whatBump.js`), which `@release-it/conventional-changelog` calls.
 
 Scopes (optional but preferred): `overlay`, `options`, `capture`, `attach` (filling the issue page), `redact`, `hook`, `security`, `release`, `store`, `deps`.
 
