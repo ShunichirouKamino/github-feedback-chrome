@@ -77,6 +77,8 @@ const FAKE_ISSUE = `<!doctype html><html><head><meta charset="utf-8"><title>New 
   const p = new URLSearchParams(location.search);
   t.value = p.get('title') || '';
   b.value = p.get('body') || '';
+  // 本物の GitHub（React）のように、少し遅れて描画し直して入力欄を初期値に戻す
+  setTimeout(() => { b.value = p.get('body') || ''; }, 700);
   window.__uploads = [];
   b.addEventListener('paste', (e) => {
     const f = e.clipboardData && e.clipboardData.files[0];

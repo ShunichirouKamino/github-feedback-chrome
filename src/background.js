@@ -306,20 +306,41 @@ async function fillIssue({ body, dataUrl, shotError, origin, path }) {
   for (let i = 0; i < 60 && !(ta = findTextarea()); i++) await sleep(250);
   if (!ta) return showFallback('本文欄が見つかりませんでした。', true), 'no-textarea';
 
-  // 本文を入れる。URL のマーカーだけなら置き換え、テンプレートの文面があれば末尾に足す
-  ta.focus();
-  const onlyMarker = ta.value.trim() === G.MARKER;
-  if (onlyMarker) ta.select();
-  else ta.setSelectionRange(ta.value.length, ta.value.length);
-  const text = (onlyMarker || !ta.value.trim() ? '' : '\n\n') + body;
-  if (!document.execCommand('insertText', false, text)) {
-    const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set;
-    setter.call(ta, onlyMarker ? text : ta.value + text);
-    ta.dispatchEvent(new Event('input', { bubbles: true }));
+  // 本文を入れる。URL のマーカーだけなら置き換え、テンプレートの文面があれば末尾に足す。
+  // GitHub の画面は読み込み後に描画し直して入力欄を初期値に戻すことがあるので、
+  // 本文が一定時間残っていることを確かめ、消えていたら入れ直す。
+  const insertBody = (el) => {
+    el.focus();
+    const current = el.value.trim();
+    const replace = current === G.MARKER || current === '';
+    if (replace) el.select();
+    else el.setSelectionRange(el.value.length, el.value.length);
+    const text = (replace ? '' : '\n\n') + body;
+    if (!document.execCommand('insertText', false, text) || !el.value.includes(body)) {
+      const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set;
+      setter.call(el, replace ? text : el.value + text);
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+  };
+  const hasBody = () => !!findTextarea()?.value.includes(body);
+  const stable = async (ms) => {
+    for (let t = 0; t < ms; t += 100) {
+      if (!hasBody()) return false;
+      await sleep(100);
+    }
+    return hasBody();
+  };
+  let filled = false;
+  for (let attempt = 0; attempt < 8 && !filled; attempt++) {
+    const el = findTextarea();
+    if (el && !el.value.includes(body)) insertBody(el);
+    filled = await stable(attempt === 0 ? 1500 : 1000);
   }
-  await sleep(150);
-  // マーカーが残っているだけでなく、本文全体が入ったことを確かめる
-  if (!findTextarea()?.value.includes(body)) return showFallback('本文を自動で入力できませんでした。', true), 'no-body';
+  if (!filled) {
+    const el = findTextarea();
+    console.warn('[github-feedback] 本文の入力に失敗:', { found: !!el, name: el?.name, label: el?.getAttribute('aria-label'), length: el?.value.length });
+    return showFallback('本文を自動で入力できませんでした。', true), 'no-body';
+  }
 
   if (!bytes) {
     if (shotError) showFallback(`スクリーンショットを添付できませんでした（${shotError}）。`, false);
