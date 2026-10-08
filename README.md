@@ -1,97 +1,104 @@
 # github-feedback
 
-動作中の画面（localhost / AWS の検証環境など）にコメントを付けて、スクリーンショットと画面の情報付きで GitHub Issue を起票する Chrome 拡張機能です。
-コードではなく「動いている画面」を見てレビューすることが増えた開発のための道具です。
+A Chrome extension that lets you comment on a running web app (localhost, AWS staging environments, and so on) and file the comment as a GitHub Issue, together with a screenshot and context about the page.
+It is built for teams that increasingly review the *running product* rather than the code.
 
-## 使い方
+> The extension UI is currently in Japanese.
 
-1. `Ctrl+Shift+1`（または拡張アイコン）でコメントモードに入る
-2. 要素をクリックするか、範囲をドラッグして選択する
-3. 起票先を確認してコメントを書き、「Issue を開く」（`Ctrl+Enter`）
-4. GitHub の Issue 作成画面が開き、本文とスクリーンショットが自動で入る。内容を確認して Submit する
+## Usage
 
-Submit は必ず人が行います。拡張機能は GitHub のトークンを持たず、ログイン中のブラウザのセッションをそのまま使います。
+1. Press `Ctrl+Shift+1` (or click the toolbar icon) to enter comment mode
+2. Click an element, or drag to select an area
+3. Check the target repository, write your comment, and click "Issue を開く" (Open issue, `Ctrl+Enter`)
+4. GitHub's new-issue page opens with the body and screenshot filled in. Review it and submit
 
-## Issue に入る情報
+A human always submits the issue. The extension holds no GitHub token; it simply uses the browser session you are already signed in with.
 
-| 情報 | 内容 |
+## What goes into the issue
+
+| Item | Content |
 |---|---|
-| コメント | 入力した内容 |
-| スクリーンショット | 画面全体（選択範囲を赤枠で強調）または選択範囲の周辺だけ。設定で選べます |
-| 環境 | URL、ページタイトル、環境名、画面サイズ、ブラウザ、日時、`<meta name="version">` などの値 |
-| 対象要素 | CSS セレクタ、テキスト |
-| 診断情報（任意） | HTML の抜粋、直近のコンソールエラー・警告、未捕捉の例外、失敗した通信 |
+| Comment | What you wrote |
+| Screenshot | The whole viewport (selection highlighted in red) or only the area around the selection, configurable |
+| Environment | URL, page title, environment name, viewport size, browser, timestamp, and values such as `<meta name="version">` |
+| Target element | CSS selector and text |
+| Diagnostics (optional) | HTML snippet, recent console errors/warnings, uncaught exceptions, and failed requests |
 
-ページから取得した値はすべてコードブロックに入れ、メンション・リンク・HTML として解釈されないようにしています。
-AI エージェント（Claude Code、Copilot など）にそのまま渡しても、修正箇所を特定しやすい形を意識しています。
+Every value taken from the page is placed inside a code block so it cannot be interpreted as a mention, link, or HTML.
+The format is designed so that an AI agent (Claude Code, Copilot, and others) can pick up the issue and locate the fix.
 
-## プライバシーとセキュリティ
+## Privacy and security
 
-脅威と対策の一覧、実装箇所へのリンクは [docs/SECURITY.md](docs/SECURITY.md) にまとめています。
+See [docs/SECURITY.md](docs/SECURITY.md) for the threat model and countermeasures, with links to the implementation.
 
-- **秘密情報のマスク**: URL のクエリ・フラグメント、ログ、HTML から、トークン・パスワード・署名付き URL・API キー・JWT・メールアドレスらしき値を `REDACTED` に置き換えます。入力値、hidden / password の input、script は HTML の抜粋に含めません。ただし完全ではないので、Submit 前に GitHub の画面で内容を確認してください。
-- **本文は URL に載せません**: Issue 作成画面の URL にはタイトルとラベルだけを入れ、本文は画面を開いた後に入力欄へ直接入れます（ブラウザの履歴やアクセスログに本文が残りません）。
-- **公開リポジトリの警告**: 起票先が公開リポジトリなら警告を出し、診断情報を既定で含めないようにします。
-- **未登録のホストでは起票先を自動で選びません**: 振り分けルールに一致しない画面では、起票先を毎回選ぶ必要があります。
-- **スクリーンショットのアップロード時点**: スクリーンショットは Issue 作成画面に貼り付けた時点で GitHub にアップロードされます（GitHub の通常の画像添付と同じ扱いです）。Submit せずに閉じても、アップロードされた画像は GitHub 上に残ります。
-- **拡張機能の UI はページから触れません**: コメント入力などの UI は closed な Shadow DOM に置き、起票先などの値は拡張機能の内部で検証し直します。
+- **Secret redaction**: tokens, passwords, signed URLs, API keys, JWTs, and email addresses found in URL queries/fragments, logs, and HTML are replaced with `REDACTED`. Input values, hidden/password inputs, and scripts are excluded from HTML snippets. Redaction is heuristic, so always review the content on GitHub before submitting.
+- **The body is never put in the URL**: the new-issue URL only carries the title and labels. The body is typed into the form after the page opens, so it does not end up in browser history or access logs.
+- **Public repository warning**: if the target repository is public, the extension warns you and leaves diagnostics out by default.
+- **No automatic target on unknown hosts**: on pages that do not match a routing rule, you must choose the target repository every time.
+- **When the screenshot is uploaded**: the screenshot is uploaded to GitHub as soon as it is pasted into the new-issue page (the same as a normal GitHub image attachment). It stays on GitHub even if you close the page without submitting.
+- **The page cannot touch the extension UI**: the comment UI lives in a closed Shadow DOM, and values such as the target repository are re-validated inside the extension.
 
-## 権限
+## Permissions
 
-| 権限 | 用途 |
+| Permission | Purpose |
 |---|---|
-| `activeTab` / `scripting` | アイコン・ショートカットを押したタブにコメントモードを出し、画面を撮影する |
-| `storage` | 設定と、Issue 画面に入れる本文・画像の一時保存 |
-| `https://github.com/*` | Issue 作成画面に本文とスクリーンショットを入れる |
-| `https://api.github.com/*` | 起票先が公開リポジトリかどうかを確認する（認証なし） |
-| 任意のホスト（設定時に個別に許可） | 振り分けに登録したホストで、コンソール・通信のエラーを記録する。GitHub Enterprise Server を使う場合はそのホスト |
+| `activeTab` / `scripting` | Show comment mode in the tab where you clicked the icon or pressed the shortcut, and capture that tab |
+| `storage` | Settings, and temporary storage of the body and image until they are placed into the issue page |
+| `https://github.com/*` | Fill the body and screenshot into the new-issue page |
+| `https://api.github.com/*` | Check whether the target repository is public (unauthenticated) |
+| Any host (granted individually in settings) | Record console and network errors on hosts you registered in the routing rules. Also the GitHub Enterprise Server host if you use one |
 
-エラーの記録は、設定画面でホストを登録して許可したときだけ有効になります。記録はブラウザ内に直近分だけ保持し、起票するときに Issue に含めるかを選べます。外部へ送ることはありません。
+Error recording is enabled only for hosts you register and grant in the settings page. Records are kept in the browser for recent events only, and you choose whether to include them when filing. Nothing is sent anywhere else.
 
-## インストール（開発版）
+## Installation (development build)
 
-1. `chrome://extensions` を開き、右上の「デベロッパー モード」を ON にする
-2. 「パッケージ化されていない拡張機能を読み込む」でこのフォルダを選ぶ
-3. 拡張機能の「詳細」→「拡張機能のオプション」で起票先リポジトリを設定する
+1. Open `chrome://extensions` and turn on "Developer mode" in the top-right corner
+2. Click "Load unpacked" and select this folder
+3. Open the extension's "Details" → "Extension options" and configure the target repositories
 
-コードを変更したら `chrome://extensions` で再読み込みしてください。
-ショートカットが効かない場合は `chrome://extensions/shortcuts` で割り当てを確認してください（Alt+Shift などは Windows や常駐アプリに取られることがあります）。
+Reload the extension in `chrome://extensions` after changing the code.
+If the shortcut does not work, check the assignment in `chrome://extensions/shortcuts` (combinations such as Alt+Shift may be captured by Windows or resident apps).
 
-## 設定例
+## Example settings
 
-| ホストのパターン | 起票先リポジトリ | 環境名 | ラベル |
+| Host pattern | Target repository | Environment | Labels |
 |---|---|---|---|
 | `localhost:*` | `org/app` | `local` | `feedback,env:local` |
 | `*.stg.example.com` | `org/app` | `stg` | `feedback,env:stg` |
 
-## 制約
+## Limitations
 
-- スクリーンショットの自動添付と本文の自動入力は GitHub の画面の作りに依存しています。うまくいかない場合は画面右上に「本文をコピー」「スクショをコピー」ボタンが出るので、手で貼り付けてください。
-- Issue Forms（YAML のテンプレート）だけを許可しているリポジトリでは、本文を自動で入れられません（上のボタンで貼り付け）。
-- iframe の中の要素は、iframe 全体として選択されます。エラーの記録もトップのフレームだけです。
-- `chrome://` や Chrome ウェブストアなど、拡張機能が動かないページでは使えません。
+- Attaching the screenshot and filling the body depend on how GitHub's page is built. If they fail, "copy body" and "copy screenshot" buttons appear in the top-right corner so you can paste manually.
+- In repositories that only allow Issue Forms (YAML templates), the body cannot be filled automatically (use the buttons above).
+- Elements inside an iframe are selected as the whole iframe. Error recording covers the top frame only.
+- It does not work on pages where extensions cannot run, such as `chrome://` pages and the Chrome Web Store.
 
-## 開発
+## Development
 
 ```sh
-npm run verify    # 構文チェック + 単体テスト + manifest の検証（依存パッケージ不要）
-npm install       # E2E 用（Puppeteer と Chrome for Testing）
-npm run e2e       # テスト用アプリと偽 GitHub を立てて、起票の流れを最後まで自動で確認
-npm run package   # dist/ に配布用 ZIP を作る
+npm run verify    # syntax check + unit tests + manifest checks (no dependencies needed)
+npm install       # for E2E (Puppeteer and Chrome for Testing)
+npm run e2e       # starts a test app and a fake GitHub, then runs the whole filing flow
+npm run package   # builds the distributable ZIP into dist/
 ```
 
-ビルドは不要です（素の JavaScript、Manifest V3）。拡張機能そのものに依存パッケージはありません。
-E2E は権限ダイアログを押せないため、テスト用に権限を足した manifest のコピーで動かします。本物の github.com での確認は手動で行ってください。
+No build step is needed (plain JavaScript, Manifest V3), and the extension itself has no dependencies.
+Because permission prompts cannot be clicked in automation, the E2E run uses a copy of the manifest with extra test permissions. Verify against the real github.com manually.
 
 ```
 manifest.json
-icons/            アイコン（icon.svg / icon-16.svg が元データ）
+icons/            icons (icon.svg / icon-16.svg are the sources)
 src/
-  lib.js          共通ロジック（設定の検証、ホスト照合、秘密情報のマスク、本文の組み立て）。テスト対象
-  background.js   コメントモードの注入、起票の検証、撮影、Issue 画面への本文・画像の投入、エラー記録の登録
-  overlay.js      コメントモードの UI とページ情報の収集
-  hook.js         エラーの記録（設定済みホストの MAIN world にだけ登録）
-  options.*       設定画面
-test/             単体テスト（node --test）と E2E（test/e2e）
-scripts/          manifest の検証、ZIP 作成
+  lib.js          shared logic (settings validation, host matching, redaction, body building); unit tested
+  background.js   injects comment mode, validates submissions, captures, fills the issue page, registers error recording
+  overlay.js      comment mode UI and page context collection
+  hook.js         error recording (registered only in the MAIN world of configured hosts)
+  options.*       settings page
+test/             unit tests (node --test) and E2E (test/e2e)
+scripts/          manifest checks and ZIP packaging
+store/            Chrome Web Store listing notes and assets
 ```
+
+## License
+
+No license has been specified yet.

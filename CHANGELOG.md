@@ -2,21 +2,21 @@
 
 ## 1.0.0 - 2026-10-08
 
-最初の正式版です。Chrome ウェブストア（限定公開）で配布します。
+First stable release, distributed through the Chrome Web Store (unlisted).
 
-### 機能
-- 動作中の画面で要素クリック / 範囲ドラッグしてコメントを書き、GitHub の Issue 作成画面を開く（`Ctrl+Shift+1`）
-- スクリーンショット（画面全体＋選択範囲の強調、または選択範囲の周辺だけ）を Issue 本文に自動で添付
-- URL・環境名・画面サイズ・ブラウザ・対象要素のセレクタを本文に記載。登録したホストではコンソール / 通信エラーと HTML の抜粋も記載
-- ホストのパターンごとに起票先リポジトリ・環境名・ラベルを振り分け。GitHub Enterprise Server に対応
+### Features
+- Click an element or drag an area on a running page, write a comment, and open GitHub's new-issue page (`Ctrl+Shift+1`)
+- Automatically attach a screenshot (whole viewport with the selection highlighted, or only the area around the selection) to the issue body
+- Include the URL, environment name, viewport size, browser, and the selected element's CSS selector. On registered hosts, also include console/network errors and an HTML snippet
+- Route issues to a target repository, environment name, and labels per host pattern. GitHub Enterprise Server is supported
 
-### セキュリティ（詳細は [docs/SECURITY.md](docs/SECURITY.md)）
-- UI は closed Shadow DOM。起票先・環境名・ラベルは service worker で検証し直す
-- ページ由来の値はマスクしたうえでコードブロックに隔離（メンション・リンク・HTML・プロンプトの注入を防ぐ）
-- 本文は URL に載せず、Issue 画面を開いた後に入力
-- スクリーンショットは設定した GitHub の `/<起票先>/issues/new` にだけ投入。撮影の前後で送信元タブを確認
-- 常時の権限は github.com / api.github.com のみ。エラー記録は登録・許可したホストにだけ動的に登録
-- 公開リポジトリへの起票は警告し、診断情報を既定で外す
+### Security (see [docs/SECURITY.md](docs/SECURITY.md))
+- The UI lives in a closed Shadow DOM. The service worker re-validates the target repository, environment name, and labels
+- Values from the page are redacted and isolated in code blocks (prevents mention, link, HTML, and prompt injection)
+- The body is not put in the URL; it is typed into the issue page after it opens
+- Screenshots are only placed into `/<target>/issues/new` on the configured GitHub host. The sender tab is checked before and after capture
+- The only always-on permissions are github.com and api.github.com. Error recording is registered dynamically only on hosts the user registered and granted
+- Filing to a public repository shows a warning and leaves diagnostics out by default
 
-### 開発
-- 共通ロジックの単体テスト、Puppeteer による E2E（テスト用アプリ＋偽 GitHub）、GitHub Actions の CI
+### Development
+- Unit tests for the shared logic, Puppeteer E2E (test app + fake GitHub), and GitHub Actions CI

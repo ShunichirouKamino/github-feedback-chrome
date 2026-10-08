@@ -1,52 +1,52 @@
-# プライバシーポリシー（github-feedback）
+# Privacy Policy (github-feedback)
 
-最終更新日: 2026-10-08
+Last updated: 2026-10-08
 
-github-feedback（以下「本拡張機能」）は、Web ページの動作確認中にコメントを書き、GitHub の Issue として起票するための Chrome 拡張機能です。GitHub, Inc. とは関係のない非公式のツールです。
+github-feedback ("the extension") is a Chrome extension for writing comments while checking a web page and filing them as GitHub Issues. It is an unofficial tool and is not affiliated with GitHub, Inc.
 
-## 取り扱う情報
+## Information the extension handles
 
-本拡張機能は、利用者がコメントモードを起動して「Issue を開く」を押したときに限り、次の情報を扱います。
+The extension handles the following information only when the user starts comment mode and clicks the button to open the issue.
 
-| 情報 | 内容 | 用途 |
+| Information | Details | Purpose |
 |---|---|---|
-| Web サイトのコンテンツ | 表示中の画面のスクリーンショット、選択した要素の CSS セレクタ・テキスト・HTML の抜粋、ページタイトル | Issue 本文に記載するため |
-| Web 履歴（表示中のページの URL） | 起票時に表示しているページの URL | Issue 本文に記載するため |
-| 診断情報 | 利用者が設定画面で登録・許可したホストでの、コンソールのエラー・警告、未捕捉の例外、失敗した通信の URL | Issue 本文に記載するため（起票時に含めるかを選べます） |
-| 設定 | 起票先リポジトリ、ホストのパターン、環境名、ラベル | 起票先の振り分けのため |
+| Website content | A screenshot of the visible page; the CSS selector, text, and an HTML snippet of the selected element; the page title | To include it in the issue body |
+| Web history (URL of the current page) | The URL of the page displayed when filing | To include it in the issue body |
+| Diagnostics | Console errors/warnings, uncaught exceptions, and URLs of failed requests, only on hosts the user registered and granted in the settings page | To include it in the issue body (the user chooses whether to include it when filing) |
+| Settings | Target repositories, host patterns, environment names, labels | To route issues to the right repository |
 
-URL・ログ・HTML に含まれるトークン、パスワード、署名付き URL、API キー、メールアドレスなどの秘密情報らしき値は、Issue 本文に入れる前にマスクします。ただし完全ではないため、送信前に GitHub の画面で内容を確認してください。
+Before anything is placed into the issue body, values that look like secrets (tokens, passwords, signed URLs, API keys, email addresses, and so on) in URLs, logs, and HTML are redacted. Redaction is not perfect, so please review the content on GitHub before submitting.
 
-## 情報の送信先
+## Where information is sent
 
-- 上記の情報は、利用者が操作した時点で、利用者が設定した GitHub（github.com または GitHub Enterprise Server）の Issue 作成画面にのみ入力されます。Issue の作成（Submit）は利用者自身が行います。
-- スクリーンショットは、Issue 作成画面に添付された時点で GitHub の通常の画像添付と同じ仕組みでアップロードされます。
-- 起票先が公開リポジトリかどうかを確認するため、リポジトリ名を GitHub API（api.github.com、または GitHub Enterprise Server の API）に認証なしで問い合わせます。
-- 開発者や第三者のサーバーには、いかなる情報も送信しません。解析ツールや広告も使用していません。
+- The information above is only filled into the new-issue page of the GitHub instance the user configured (github.com or GitHub Enterprise Server), at the moment the user takes the action. The user creates (submits) the issue themselves.
+- The screenshot is uploaded through GitHub's regular image attachment mechanism when it is attached to the new-issue page.
+- To check whether the target repository is public, the extension queries the GitHub API (api.github.com, or the GitHub Enterprise Server API) for the repository name without authentication.
+- No information is ever sent to the developer or to any third-party server. The extension uses no analytics and no advertising.
 
-## 保存
+## Storage
 
-- 設定は `chrome.storage.sync` に保存されます（Chrome の同期を有効にしている場合は、利用者の Google アカウントを通じて同期されます）。
-- Issue 作成画面に入力する本文とスクリーンショットは、入力が終わるまで `chrome.storage.session`（ブラウザのメモリ上）に一時保存し、入力後または 10 分後に削除します。
-- 診断情報は、登録したホストのページを開いている間だけ、そのページのメモリ上に直近分を保持します。
+- Settings are stored in `chrome.storage.sync` (synced through the user's Google account if Chrome sync is enabled).
+- The body and screenshot to be filled into the new-issue page are kept temporarily in `chrome.storage.session` (in browser memory) and deleted once they are filled in, or after 10 minutes.
+- Diagnostics are kept in the page's memory, for recent events only, while a page on a registered host is open.
 
-## 利用の制限
+## Limited use
 
-本拡張機能が扱う情報は、上記の用途（Issue の起票）にのみ使用し、販売、広告、信用調査、その他の目的には使用しません。Chrome ウェブストアのユーザーデータに関するポリシー（Limited Use の要件を含む）に従います。
+Information handled by the extension is used only for the purpose above (filing issues). It is never sold, and never used for advertising, creditworthiness, or any other purpose. The extension complies with the Chrome Web Store User Data Policy, including the Limited Use requirements.
 
-## 権限
+## Permissions
 
-| 権限 | 理由 |
+| Permission | Reason |
 |---|---|
-| activeTab | アイコン / ショートカットを押したタブにコメントモードを表示し、スクリーンショットを撮るため |
-| scripting | コメントモードの表示、Issue 作成画面への本文の入力、エラー記録の登録のため |
-| storage | 設定と、Issue 作成画面に入力するまでの一時保存のため |
-| github.com / api.github.com | Issue 作成画面への入力と、公開リポジトリかどうかの確認のため |
-| 任意のホスト（利用者が個別に許可） | 利用者が登録したホストでエラーを記録するため、および GitHub Enterprise Server を使うため |
+| activeTab | To show comment mode in the tab where the icon or shortcut was used, and to capture that tab |
+| scripting | To show comment mode, fill the body into the new-issue page, and register error recording |
+| storage | To store settings, and to keep data temporarily until it is filled into the new-issue page |
+| github.com / api.github.com | To fill the new-issue page and to check whether the repository is public |
+| Any host (granted individually by the user) | To record errors on hosts the user registered, and to support GitHub Enterprise Server |
 
-## お問い合わせ
+## Contact
 
-本ポリシーに関するお問い合わせは、次の連絡先までご連絡ください。
+For questions about this policy, please contact:
 
-- メール: syuniti0617@gmail.com
+- Email: syuniti0617@gmail.com
 - GitHub: https://github.com/ShunichirouKamino/github-feedback-chrome/issues
