@@ -6,6 +6,8 @@ const path = require('path');
 const root = path.join(__dirname, '..');
 const { version } = JSON.parse(fs.readFileSync(path.join(root, 'manifest.json'), 'utf8'));
 const dist = path.join(root, 'dist');
+// release-it は dist/*.zip を Release に添付するので、古い版の ZIP を残さない
+fs.rmSync(dist, { recursive: true, force: true });
 fs.mkdirSync(dist, { recursive: true });
 const out = path.join(dist, `github-feedback-${version}.zip`);
 fs.rmSync(out, { force: true });

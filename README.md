@@ -50,6 +50,11 @@ See [docs/SECURITY.md](docs/SECURITY.md) for the threat model and countermeasure
 
 Error recording is enabled only for hosts you register and grant in the settings page. Records are kept in the browser for recent events only, and you choose whether to include them when filing. Nothing is sent anywhere else.
 
+## Download
+
+Download `github-feedback-<version>.zip` from the [latest release](https://github.com/ShunichirouKamino/github-feedback-chrome/releases/latest), extract it, open `chrome://extensions`, turn on "Developer mode", and click "Load unpacked" to select the extracted folder.
+The extension will also be available from the Chrome Web Store (unlisted) once it passes review.
+
 ## Installation (development build)
 
 1. Open `chrome://extensions` and turn on "Developer mode" in the top-right corner
@@ -85,6 +90,16 @@ npm run package   # builds the distributable ZIP into dist/
 No build step is needed (plain JavaScript, Manifest V3), and the extension itself has no dependencies.
 Because permission prompts cannot be clicked in automation, the E2E run uses a copy of the manifest with extra test permissions. Verify against the real github.com manually.
 
+### Releasing
+
+Releases are cut with [release-it](https://github.com/release-it/release-it) and [Conventional Commits](https://www.conventionalcommits.org/).
+
+1. Write commit messages as `feat: …`, `fix: …`, `docs: …` (add `!` or a `BREAKING CHANGE:` footer for breaking changes)
+2. Run **Actions → Release → Run workflow** on `main`. Leave the version empty to derive it from the commits (`feat` → minor, `fix` → patch, breaking → major), or enter an explicit version / increment
+3. The workflow runs the checks, bumps `package.json` and `manifest.json`, updates [CHANGELOG.md](CHANGELOG.md), tags `vX.Y.Z`, and publishes a GitHub Release with generated notes and the extension ZIP attached
+
+`npm run release -- --dry-run` previews the next version and notes locally.
+
 ```
 manifest.json
 icons/            icons (icon.svg / icon-16.svg are the sources)
@@ -95,7 +110,7 @@ src/
   hook.js         error recording (registered only in the MAIN world of configured hosts)
   options.*       settings page
 test/             unit tests (node --test) and E2E (test/e2e)
-scripts/          manifest checks and ZIP packaging
+scripts/          manifest checks, version sync and ZIP packaging
 store/            Chrome Web Store listing notes and assets
 ```
 

@@ -1,6 +1,6 @@
 {
   "name": "github-feedback-chrome",
-  "version": "1.0.0",
+  "version": "0.2.0",
   "private": true,
   "description": "Comment on a running page and file it as a GitHub Issue with screenshot and context (Chrome extension)",
   "scripts": {
@@ -8,13 +8,16 @@
     "check": "node -e \"for (const f of require('fs').readdirSync('src').filter((f) => f.endsWith('.js'))) require('child_process').execFileSync(process.execPath, ['--check', 'src/' + f], { stdio: 'inherit' })\"",
     "verify": "npm run check && npm test && node scripts/verify-manifest.js",
     "package": "node scripts/package.js",
-    "e2e": "node test/e2e/run.js"
+    "e2e": "node test/e2e/run.js",
+    "release": "release-it"
   },
   "engines": {
     "node": ">=20"
   },
   "devDependencies": {
+    "@release-it/conventional-changelog": "^12.0.0",
     "puppeteer": "^24.10.0",
+    "release-it": "^19.2.4",
     "selfsigned": "^2.4.1"
   }
 }

@@ -7,7 +7,7 @@ What to enter in the [Chrome Web Store Developer Dashboard](https://chrome.googl
 - [ ] Register as a developer (one-time fee of USD 5). If publishing on behalf of a company, use the company's publisher name and contact email
 - [x] Fill in the contact in `PRIVACY.md`
 - [x] Publish the privacy policy at a URL anyone can open (the repository is public)
-- [x] Build `dist/github-feedback-1.0.0.zip` with `npm run package` (also attached to the GitHub Release)
+- [x] The package `github-feedback-1.0.0.zip` is attached to the GitHub Release (or build it with `npm run package`)
 
 ## Package
 

@@ -1,0 +1,47 @@
+name: Release
+
+# Actions > Release > Run workflow で実行する。
+# Conventional Commits から版を自動で決め（feat → minor、fix → patch、破壊的変更 → major）、
+# CHANGELOG.md とリリースノートを生成して、vX.Y.Z の tag と GitHub Release（拡張機能の ZIP 付き）を作る。
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Explicit SemVer (e.g. 1.0.0) or increment (patch / minor / major). Leave empty to decide from commits
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: release
+      cancel-in-progress: false
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          fetch-tags: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+        env:
+          PUPPETEER_SKIP_DOWNLOAD: 'true'
+      - name: Release
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          npx release-it ${VERSION:+"$VERSION"} --ci
