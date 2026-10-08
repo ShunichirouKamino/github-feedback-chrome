@@ -72,11 +72,14 @@ AI エージェント（Claude Code、Copilot など）にそのまま渡して�
 ## 開発
 
 ```sh
-npm run verify    # 構文チェック + 単体テスト + manifest の検証
+npm run verify    # 構文チェック + 単体テスト + manifest の検証（依存パッケージ不要）
+npm install       # E2E 用（Puppeteer と Chrome for Testing）
+npm run e2e       # テスト用アプリと偽 GitHub を立てて、起票の流れを最後まで自動で確認
 npm run package   # dist/ に配布用 ZIP を作る
 ```
 
-ビルドは不要です（素の JavaScript、Manifest V3）。依存パッケージもありません。
+ビルドは不要です（素の JavaScript、Manifest V3）。拡張機能そのものに依存パッケージはありません。
+E2E は権限ダイアログを押せないため、テスト用に権限を足した manifest のコピーで動かします。本物の github.com での確認は手動で行ってください。
 
 ```
 manifest.json
@@ -87,6 +90,6 @@ src/
   overlay.js      コメントモードの UI とページ情報の収集
   hook.js         エラーの記録（設定済みホストの MAIN world にだけ登録）
   options.*       設定画面
-test/             単体テスト（node --test）
+test/             単体テスト（node --test）と E2E（test/e2e）
 scripts/          manifest の検証、ZIP 作成
 ```

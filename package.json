@@ -4,12 +4,17 @@
   "private": true,
   "description": "Comment on a running page and file it as a GitHub Issue with screenshot and context (Chrome extension)",
   "scripts": {
-    "test": "node --test",
+    "test": "node --test test/*.test.js",
     "check": "node -e \"for (const f of require('fs').readdirSync('src').filter((f) => f.endsWith('.js'))) require('child_process').execFileSync(process.execPath, ['--check', 'src/' + f], { stdio: 'inherit' })\"",
     "verify": "npm run check && npm test && node scripts/verify-manifest.js",
-    "package": "node scripts/package.js"
+    "package": "node scripts/package.js",
+    "e2e": "node test/e2e/run.js"
   },
   "engines": {
     "node": ">=20"
+  },
+  "devDependencies": {
+    "puppeteer": "^24.10.0",
+    "selfsigned": "^2.4.1"
   }
 }

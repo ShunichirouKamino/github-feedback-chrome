@@ -18,14 +18,19 @@
   // ---------- 文字列 ----------
 
   /** コードポイント単位で切り詰める（サロゲートペアを壊さない） */
+  /** 対になっていないサロゲートを U+FFFD に置き換える（encodeURIComponent が例外を投げないように） */
+  function wellFormed(s) {
+    return String(s ?? '').toWellFormed();
+  }
+
   function truncate(s, max, ellipsis = '…') {
-    const chars = Array.from(String(s ?? ''));
+    const chars = Array.from(wellFormed(s));
     return chars.length > max ? chars.slice(0, max).join('') + ellipsis : chars.join('');
   }
 
   /** 改行・制御文字を空白にして 1 行にする */
   function oneLine(s) {
-    return String(s ?? '').replace(/[\u0000-\u001f\u007f\u2028\u2029]+/g, ' ').trim();
+    return wellFormed(s).replace(/[\u0000-\u001f\u007f\u2028\u2029]+/g, ' ').trim();
   }
 
   /** 中身に含まれるバッククォートより長いフェンスで囲む（コードブロックから抜けられないようにする） */
@@ -101,8 +106,9 @@
    */
   function parsePattern(p) {
     const s = normalizePattern(p);
-    const m = s.match(/^(\*\.)?((?:[a-z0-9-]+\.)*[a-z0-9-]+|\[[0-9a-f:.]+\])(?::(\d{1,5}|\*))?$/);
-    if (!m) return null;
+    const label = '[a-z0-9](?:[a-z0-9-]*[a-z0-9])?'; // 先頭・末尾のハイフンは不可
+    const m = s.match(new RegExp(`^(\\*\\.)?((?:${label}\\.)*${label}|\\[[0-9a-f:.]+\\])(?::(\\d{1,5}|\\*))?$`));
+    if (!m || (m[3] && m[3] !== '*' && Number(m[3]) > 65535)) return null;
     return { wildcard: !!m[1], hostname: m[2], port: m[3] && m[3] !== '*' ? m[3] : null };
   }
 
@@ -301,7 +307,7 @@
     L.push('## 環境', '', codeBlock(env.map(([k, v]) => `${k}: ${oneLine(v)}`).join('\n'), 'text'), '');
 
     if (c.target) {
-      const lines = [`セレクタ: ${oneLine(truncate(c.target.selector, 300))}`];
+      const lines = [`セレクタ: ${oneLine(redactText(truncate(c.target.selector, 300)))}`];
       if (c.target.text) lines.push(`テキスト: ${oneLine(redactText(truncate(c.target.text, 200)))}`);
       L.push('## 対象要素', '', codeBlock(lines.join('\n'), 'text'));
       if (c.target.html) {

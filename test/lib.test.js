@@ -10,6 +10,12 @@ test('truncate はサロゲートペアを壊さず、encodeURIComponent が通�
   assert.equal(G.truncate('abc', 5), 'abc');
 });
 
+test('対になっていないサロゲートでも URL 化で例外にならない', () => {
+  const lone = 'a' + String.fromCharCode(0xd800) + 'b';
+  assert.doesNotThrow(() => G.buildIssueUrl('https://github.com', 'o/r', { title: lone, labels: lone }));
+  assert.doesNotThrow(() => encodeURIComponent(G.oneLine(lone)));
+});
+
 test('codeBlock は中のバッククォートより長いフェンスを使う', () => {
   const b = G.codeBlock('x ```` y');
   assert.ok(b.startsWith('`````\n'));
@@ -59,7 +65,9 @@ test('ホストのパターン照合', () => {
   ];
   for (const [p, h, port] of yes) assert.ok(G.hostMatches(p, h, port), `${p} ~ ${h}:${port}`);
   for (const [p, h, port] of no) assert.ok(!G.hostMatches(p, h, port), `${p} !~ ${h}:${port}`);
-  for (const bad of ['d1234*.cloudfront.net', 'a*b', '*', '']) assert.equal(G.parsePattern(bad), null, bad);
+  for (const bad of ['d1234*.cloudfront.net', 'a*b', '*', '', '-bad.example', 'bad-.example', 'localhost:99999']) {
+    assert.equal(G.parsePattern(bad), null, bad);
+  }
   assert.deepEqual(G.matchPatternsFor('localhost:*'), ['*://localhost/*']);
   assert.deepEqual(G.matchPatternsFor('*.stg.example.com'), ['*://*.stg.example.com/*']);
 });
@@ -151,11 +159,11 @@ test('buildBody はページ由来の値をコードブロックの外に出さ�
     viewport: '1440×900 @2x',
     browser: 'Chrome 154 / Windows',
     time: '2026/10/8 15:00:00',
-    target: { selector: '#a > b', text: evil, html: `<input type="hidden" value="x">${evil}` },
+    target: { selector: '[data-testid="token=SELECTOR_SECRET"] > b', text: evil, html: `<input type="hidden" value="x">${evil}` },
     diag: { logs: [{ t: 1, level: 'error', msg: evil + ' password=abc' }], net: [{ t: 2, method: 'GET', url: '/x?token=t', status: 500 }] },
   });
   assert.ok(body.includes(G.MARKER));
-  assert.ok(!body.includes('secret1') && !body.includes('password=abc') && !body.includes('token=t'));
+  for (const leak of ['secret1', 'password=abc', 'token=t', 'SELECTOR_SECRET']) assert.ok(!body.includes(leak), leak);
   // コードブロックの外側に @everyone や偽見出しが出ていないこと
   const outside = body.replace(/(`{3,})[^\n]*\n[\s\S]*?\n\1/g, '');
   assert.ok(!outside.includes('@everyone'), outside);

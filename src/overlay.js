@@ -158,9 +158,12 @@
   // ---------- 選択 ----------
   function elementAt(x, y) {
     layer.style.pointerEvents = 'none';
-    const el = document.elementFromPoint(x, y);
-    layer.style.pointerEvents = '';
-    return el && el !== host ? el : null;
+    try {
+      const el = document.elementFromPoint(x, y);
+      return el && el !== host ? el : null;
+    } finally {
+      layer.style.pointerEvents = '';
+    }
   }
 
   layer.addEventListener('pointermove', (e) => {

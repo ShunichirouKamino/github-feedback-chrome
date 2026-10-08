@@ -110,11 +110,16 @@ async function handleSubmit(msg, tab) {
 
 // 表示中のタブを撮影する。送信元のタブが前面にない場合は別のページを写してしまうので中止する。
 async function captureAnnotated(tab, rect, viewportWidth, mode) {
-  const [active] = await chrome.tabs.query({ active: true, windowId: tab.windowId });
-  if (!active || active.id !== tab.id) {
-    throw new UserError('撮影前にタブが切り替わったため中止しました。もう一度送信してください。');
-  }
+  // captureVisibleTab はタブを指定できないので、撮影の前後で送信元タブが前面にあることを確かめる
+  const assertActive = async () => {
+    const [active] = await chrome.tabs.query({ active: true, windowId: tab.windowId });
+    if (!active || active.id !== tab.id) {
+      throw new UserError('撮影中にタブが切り替わったため中止しました。もう一度送信してください。');
+    }
+  };
+  await assertActive();
   const raw = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'png' });
+  await assertActive();
   const bmp = await createImageBitmap(await (await fetch(raw)).blob());
   const s = viewportWidth > 0 ? bmp.width / viewportWidth : 1;
 
@@ -229,22 +234,35 @@ async function processJob(tabId, tabUrl) {
   } catch {
     return;
   }
-  // 起票先の GitHub の Issue 作成画面以外（SSO の途中、テンプレート選択画面など）には何も注入しない
+  const pathOf = (x) => x.pathname.replace(/\/+$/, '').toLowerCase();
   const path = `/${job.repo}/issues/new`.toLowerCase();
-  if (u.origin !== job.origin || u.pathname.replace(/\/+$/, '').toLowerCase() !== path) return;
+  if (u.origin !== job.origin || pathOf(u) !== path) {
+    // 起票先の Issue 作成画面以外には何も注入しない。
+    // SSO・ログイン・テンプレート選択などの途中経路だけは待ち、それ以外の画面へ移ったら破棄する
+    const waypoint =
+      u.origin !== job.origin ||
+      pathOf(u) === `${path}/choose` ||
+      /^\/(login|session|sessions|orgs\/[^/]+\/sso|enterprises\/[^/]+\/sso)(\/|$)/i.test(u.pathname);
+    const hops = (job.hops || 0) + 1;
+    if (!waypoint || hops > 10) await chrome.storage.session.remove(key);
+    else await chrome.storage.session.set({ [key]: { ...job, hops } });
+    return;
+  }
 
   if (inFlight.has(tabId)) return;
   inFlight.add(tabId);
   try {
     await chrome.scripting.executeScript({ target: { tabId }, files: ['src/lib.js'] });
-    // 注入できた時点で job は消す（以降の失敗は画面上のフォールバックで対応する）
-    const run = chrome.scripting.executeScript({
+    await chrome.scripting.executeScript({
       target: { tabId },
       func: fillIssue,
       args: [{ body: job.body, dataUrl: job.dataUrl, shotError: job.shotError, origin: job.origin, path }],
     });
+    // 最後まで実行できたら消す（自動入力に失敗した場合は、画面上のコピー用ボタンで対応する）
     await chrome.storage.session.remove(key);
-    await run;
+  } catch (e) {
+    // 実行中の画面遷移などで中断した。job は残し、次の読み込み完了で再試行する（TTL・hops で上限あり）
+    console.warn('[github-feedback] fill issue:', e);
   } finally {
     inFlight.delete(tabId);
   }
@@ -275,10 +293,11 @@ async function fillIssue({ body, dataUrl, shotError, origin, path }) {
   }
 
   const findTextarea = () => {
-    const all = [...document.querySelectorAll('textarea')];
+    // 表示されている入力欄だけを対象にする
+    const all = [...document.querySelectorAll('textarea')].filter((t) => t.getClientRects().length > 0);
     return (
       all.find((t) => t.value.includes(G.MARKER)) ||
-      document.querySelector('textarea[name="issue[body]"]') ||
+      all.find((t) => t.name === 'issue[body]') ||
       all.find((t) => /markdown|body|description/i.test(`${t.getAttribute('aria-label') || ''} ${t.name || ''} ${t.id || ''}`))
     );
   };
@@ -299,7 +318,8 @@ async function fillIssue({ body, dataUrl, shotError, origin, path }) {
     ta.dispatchEvent(new Event('input', { bubbles: true }));
   }
   await sleep(150);
-  if (!findTextarea()?.value.includes(G.MARKER)) return showFallback('本文を自動で入力できませんでした。', true), 'no-body';
+  // マーカーが残っているだけでなく、本文全体が入ったことを確かめる
+  if (!findTextarea()?.value.includes(body)) return showFallback('本文を自動で入力できませんでした。', true), 'no-body';
 
   if (!bytes) {
     if (shotError) showFallback(`スクリーンショットを添付できませんでした（${shotError}）。`, false);
