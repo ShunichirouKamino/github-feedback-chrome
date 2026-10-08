@@ -1,4 +1,4 @@
-const DEFAULTS = { githubBase: 'https://github.com', defaultRepo: '', defaultLabels: 'feedback', rules: [] };
+const G = self.GHFB;
 const FIELDS = [
   ['pattern', 'localhost:*'],
   ['repo', 'owner/repo'],
@@ -6,7 +6,8 @@ const FIELDS = [
   ['labels', 'feedback,env:local'],
 ];
 
-const tbody = document.getElementById('rules');
+const $ = (id) => document.getElementById(id);
+const tbody = $('rules');
 
 function addRow(rule = {}) {
   const tr = document.createElement('tr');
@@ -30,58 +31,100 @@ function addRow(rule = {}) {
   tbody.appendChild(tr);
 }
 
-async function load() {
-  const cfg = await chrome.storage.sync.get(DEFAULTS);
-  for (const k of ['githubBase', 'defaultRepo', 'defaultLabels']) document.getElementById(k).value = cfg[k];
+function render(cfg) {
+  $('githubBase').value = cfg.githubBase;
+  $('defaultRepo').value = cfg.defaultRepo;
+  $('defaultLabels').value = cfg.defaultLabels;
+  $('shotMode').value = cfg.shotMode;
+  tbody.textContent = '';
   (cfg.rules.length ? cfg.rules : [{}]).forEach(addRow);
 }
 
-// "https://github.com/owner/repo/issues" や "owner/repo.git" を "owner/repo" にそろえる。
-// URL の場合は GitHub URL の推定用に origin も返す。
-function parseRepo(value) {
-  let v = value.trim();
-  let origin = null;
-  const m = v.match(/^(https?:\/\/[^/]+)\/(.*)$/i);
-  if (m) [, origin, v] = m;
-  const repo = v.split('/').filter(Boolean).slice(0, 2).join('/').replace(/\.git$/i, '');
-  return { repo, origin };
-}
+/** 画面の入力を検証して設定にする。エラーがあれば errors に積む */
+function readForm() {
+  const errors = [];
+  let githubBase = G.DEFAULTS.githubBase;
+  try {
+    githubBase = G.normalizeBase($('githubBase').value);
+  } catch (e) {
+    errors.push(e.message);
+  }
 
-async function save() {
-  let githubBase = document.getElementById('githubBase').value.trim().replace(/\/+$/, '') || DEFAULTS.githubBase;
-  const origins = [];
-  const normalize = (value) => {
-    const { repo, origin } = parseRepo(value);
-    if (origin) origins.push(origin);
+  const repoOf = (value, where) => {
+    const { repo, origin } = G.parseRepo(value);
+    if (!repo) errors.push(`${where}: リポジトリは owner/repo の形式か、リポジトリの URL で入力してください。`);
+    else if (origin && origin !== githubBase) {
+      errors.push(`${where}: リポジトリのホスト（${origin}）が「GitHub のホスト」（${githubBase}）と違います。`);
+    }
     return repo;
   };
 
-  const rules = [...tbody.querySelectorAll('tr')]
-    .map((tr) => Object.fromEntries([...tr.querySelectorAll('input')].map((i) => [i.dataset.key, i.value.trim()])))
-    .filter((r) => r.pattern && r.repo)
-    .map((r) => ({ ...r, repo: normalize(r.repo) }));
-  const defaultRepo = normalize(document.getElementById('defaultRepo').value);
+  const defaultRepoRaw = $('defaultRepo').value.trim();
+  const defaultRepo = defaultRepoRaw ? repoOf(defaultRepoRaw, 'デフォルトの起票先') : '';
 
-  // GitHub URL が既定のままで、貼られた URL が別ホスト (GHES) ならそちらに合わせる
-  if (githubBase === DEFAULTS.githubBase && origins.length && origins.every((o) => o === origins[0])) {
-    githubBase = origins[0];
-  }
+  const rules = [];
+  [...tbody.querySelectorAll('tr')].forEach((tr, i) => {
+    const v = Object.fromEntries([...tr.querySelectorAll('input')].map((el) => [el.dataset.key, el.value.trim()]));
+    tr.classList.remove('bad');
+    if (!v.pattern && !v.repo && !v.env && !v.labels) return; // 空行は無視
+    const where = `振り分け ${i + 1} 行目`;
+    const before = errors.length;
+    if (!G.parsePattern(v.pattern)) errors.push(`${where}: ホストのパターンの形式が正しくありません（例: localhost:* / *.stg.example.com）。`);
+    const repo = repoOf(v.repo, where);
+    if (errors.length > before) tr.classList.add('bad');
+    rules.push({
+      pattern: G.normalizePattern(v.pattern),
+      repo,
+      env: G.truncate(G.oneLine(v.env), 30, ''),
+      labels: G.normalizeLabels(v.labels),
+    });
+  });
 
   const cfg = {
     githubBase,
     defaultRepo,
-    defaultLabels: document.getElementById('defaultLabels').value.trim(),
+    defaultLabels: G.normalizeLabels($('defaultLabels').value),
+    shotMode: $('shotMode').value === 'selection' ? 'selection' : 'viewport',
     rules,
   };
-  await chrome.storage.sync.set(cfg);
-  // 正規化後の値を画面にも反映
-  tbody.innerHTML = '';
-  load();
-  const status = document.getElementById('status');
-  status.textContent = '保存しました';
-  setTimeout(() => (status.textContent = ''), 2000);
+  // エラー収集用のホストと、GHES（公開リポジトリ判定の API）へのアクセス許可
+  const origins = [...new Set(rules.flatMap((r) => G.matchPatternsFor(r.pattern)))];
+  if (githubBase !== G.DEFAULTS.githubBase) origins.push(`${githubBase}/*`);
+  return { cfg, errors, origins };
 }
 
-document.getElementById('add').onclick = () => addRow();
-document.getElementById('save').onclick = save;
-load();
+async function save() {
+  const status = $('status');
+  status.textContent = '';
+  const { cfg, errors, origins } = readForm();
+  $('errors').textContent = errors.join('\n');
+  if (errors.length) return;
+
+  // permissions.request はクリック直後に呼ぶ必要があるので、他の await より先に行う
+  let granted = true;
+  if (origins.length) {
+    try {
+      granted = await chrome.permissions.request({ origins });
+    } catch (e) {
+      console.warn('[github-feedback] permissions:', e);
+      granted = false;
+    }
+  }
+
+  try {
+    await chrome.storage.sync.set(cfg);
+  } catch (e) {
+    $('errors').textContent = `保存できませんでした: ${e.message}（ルールが多すぎる場合は減らしてください）`;
+    return;
+  }
+  render(G.normalizeConfig(cfg));
+  status.textContent = granted ? '保存しました' : '保存しました（ホストへのアクセスが許可されなかったため、エラーの記録は無効です）';
+  setTimeout(() => (status.textContent = ''), granted ? 2000 : 8000);
+}
+
+$('add').onclick = () => addRow();
+$('save').onclick = save;
+chrome.storage.sync
+  .get(null)
+  .then((raw) => render(G.normalizeConfig(raw)))
+  .catch((e) => ($('errors').textContent = `設定を読み込めませんでした: ${e.message}`));

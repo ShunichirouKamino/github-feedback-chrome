@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <!-- 吹き出し + Open issue マーク（Octicons issue-opened を参考にしたオリジナル。GitHub のロゴは使わない） -->
+  <path fill="#1f883d" d="M32 10H96A24 24 0 0 1 120 34V74A24 24 0 0 1 96 98H56L30 119L33 98H32A24 24 0 0 1 8 74V34A24 24 0 0 1 32 10Z"/>
+  <circle cx="64" cy="54" r="25" fill="none" stroke="#fff" stroke-width="9"/>
+  <circle cx="64" cy="54" r="8.5" fill="#fff"/>
+</svg>

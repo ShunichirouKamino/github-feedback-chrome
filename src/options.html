@@ -9,7 +9,7 @@
     h1 { font-size: 20px; }
     h2 { font-size: 15px; margin-top: 28px; }
     p.note { color: #59636e; font-size: 12px; margin: 4px 0 10px; }
-    input { width: 100%; padding: 6px 8px; border: 1px solid #d0d7de; border-radius: 6px; font: inherit; box-sizing: border-box; }
+    input, select { width: 100%; padding: 6px 8px; border: 1px solid #d0d7de; border-radius: 6px; font: inherit; box-sizing: border-box; }
     .field { display: grid; grid-template-columns: 160px 1fr; gap: 8px; align-items: start; margin: 12px 0; }
     .field label { padding-top: 7px; font-weight: 600; }
     .field p.note { margin: 4px 0 0; }
@@ -25,8 +25,12 @@
     button.primary { background: #1f883d; border-color: #1f883d; color: #fff; }
     .footer { margin-top: 24px; display: flex; gap: 12px; align-items: center; }
     #status { color: #1f883d; }
+    #errors { color: #cf222e; font-size: 13px; white-space: pre-line; }
+    #errors:empty { display: none; }
+    tr.bad input { border-color: #cf222e; }
     @media (prefers-color-scheme: dark) {
-      input { background: #0d1117; border-color: #30363d; color: #e6edf3; }
+      input, select { background: #0d1117; border-color: #30363d; color: #e6edf3; }
+      #errors { color: #f85149; }
       button { background: #21262d; border-color: #30363d; }
     }
   </style>
@@ -47,7 +51,8 @@
     <label for="defaultRepo">デフォルトの起票先</label>
     <div>
       <input id="defaultRepo" placeholder="owner/repo">
-      <p class="note">下の「ホストごとの振り分け」のどれにも一致しなかったときに起票するリポジトリです。
+      <p class="note">下の「ホストごとの振り分け」のどれにも一致しない画面で、起票先の候補の先頭に出すリポジトリです。
+        誤起票を防ぐため、自動では選択されません（画面ごとに選んでください）。
         <code>owner/repo</code> の形式か、リポジトリの URL をそのまま貼り付けてください。振り分けルールだけで足りるなら空欄で構いません。</p>
     </div>
   </div>
@@ -60,8 +65,20 @@
     </div>
   </div>
 
+  <div class="field">
+    <label for="shotMode">スクリーンショット</label>
+    <div>
+      <select id="shotMode">
+        <option value="viewport">画面全体（選択範囲を赤枠で強調し、周りを暗くする）</option>
+        <option value="selection">選択範囲の周辺だけ</option>
+      </select>
+      <p class="note">画面全体の場合、選択範囲の外に写っている情報も Issue に載ります。個人情報などが写りやすい画面では「選択範囲の周辺だけ」を選んでください。</p>
+    </div>
+  </div>
+
   <h2>ホストごとの振り分け</h2>
-  <p class="note">開いている画面のホスト名（ポート付き）を上から順に照合し、最初に一致したルールの起票先を使います。</p>
+  <p class="note">開いている画面のホスト名を上から順に照合し、最初に一致したルールの起票先を使います。
+    保存すると、登録したホストへのアクセス許可を求めます。許可したホストでだけ、コンソールや通信のエラーを記録します（記録は端末内だけで、起票するときに Issue に含めるかを選べます）。</p>
   <table>
     <thead><tr><th>ホストのパターン</th><th>起票先リポジトリ</th><th>環境名</th><th>ラベル</th><th></th></tr></thead>
     <tbody id="rules"></tbody>
@@ -69,8 +86,12 @@
   <p><button id="add">＋ ルールを追加</button></p>
   <dl class="cols">
     <dt>ホストのパターン</dt>
-    <dd>対象の画面のホスト名です。<code>*</code> はワイルドカードです。
-      例: <code>localhost:*</code>（どのポートでも）/ <code>*.stg.example.com</code> / <code>d1234abcd.cloudfront.net</code></dd>
+    <dd>対象の画面のホスト名です。書ける形は次のとおりです（URL を貼っても、ホスト名だけ取り出します）。
+      <br><code>localhost</code> / <code>localhost:*</code>：どのポートでも一致
+      <br><code>localhost:3000</code>：そのポートだけ
+      <br><code>*.stg.example.com</code>：サブドメインすべて（<code>stg.example.com</code> 自身も含む）
+      <br><code>d1234abcd.cloudfront.net</code>：そのホストだけ
+      <br><code>*</code> は先頭の <code>*.</code> にだけ使えます。</dd>
     <dt>起票先リポジトリ</dt>
     <dd>一致したときに起票するリポジトリです。<code>owner/repo</code> の形式か、URL をそのまま貼り付けてください。</dd>
     <dt>環境名</dt>
@@ -85,7 +106,9 @@
     <button id="save" class="primary">保存</button>
     <span id="status"></span>
   </div>
+  <p id="errors" role="alert"></p>
 
+  <script src="lib.js"></script>
   <script src="options.js"></script>
 </body>
 </html>
