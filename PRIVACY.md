@@ -48,4 +48,5 @@ URL・ログ・HTML に含まれるトークン、パスワード、署名付き
 
 本ポリシーに関するお問い合わせは、次の連絡先までご連絡ください。
 
-- 連絡先: `TODO: 公開してよい連絡先（メールアドレスなど）を記入`
+- メール: syuniti0617@gmail.com
+- GitHub: https://github.com/ShunichirouKamino/github-feedback-chrome/issues

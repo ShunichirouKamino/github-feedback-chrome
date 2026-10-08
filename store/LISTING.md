@@ -5,9 +5,9 @@
 ## 申請前に必要なこと
 
 - [ ] デベロッパー登録（初回のみ、登録料 5 USD）。会社として出す場合は、公開者名と連絡先メールを会社のものにする
-- [ ] `PRIVACY.md` の連絡先（`TODO`）を記入する
-- [ ] プライバシーポリシーを**誰でも見られる URL** で公開する（このリポジトリは private のため、リポジトリ内のリンクでは審査担当者が開けない）。例: リポジトリを public にする / 公開 Gist / 社外公開しているサイト
-- [ ] `npm run package` で `dist/github-feedback-1.0.0.zip` を作る（GitHub Release にも添付済み）
+- [x] `PRIVACY.md` の連絡先を記入する
+- [x] プライバシーポリシーを誰でも見られる URL で公開する（リポジトリを public にした）
+- [x] `npm run package` で `dist/github-feedback-1.0.0.zip` を作る（GitHub Release にも添付済み）
 
 ## パッケージ
 
@@ -26,8 +26,8 @@
 | ストアアイコン | `icons/icon128.png` |
 | スクリーンショット | `store/screenshot-1-select.png` / `store/screenshot-2-comment.png` / `store/screenshot-3-options.png`（1280×800）。可能なら、実際の GitHub の Issue 作成画面に本文とスクショが入った状態を 1 枚追加する |
 | プロモーション タイル（小） | `store/promo-small-440x280.png` |
-| 公式 URL / ホームページ URL | （任意。公開しているページがあれば） |
-| サポート URL | （任意） |
+| 公式 URL / ホームページ URL | https://github.com/ShunichirouKamino/github-feedback-chrome |
+| サポート URL | https://github.com/ShunichirouKamino/github-feedback-chrome/issues |
 
 ### 説明
 
@@ -99,7 +99,7 @@ localhost:*、*.stg.example.com のようなホストのパターンごとに、
 
 ### プライバシー ポリシー URL
 
-- `PRIVACY.md` を公開した URL
+- https://github.com/ShunichirouKamino/github-feedback-chrome/blob/main/PRIVACY.md
 
 ## 配布
 
