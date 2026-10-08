@@ -64,12 +64,16 @@ async function attachScreenshot(dataUrl, marker) {
   const file = new File([bytes], `screenshot-${Date.now()}.png`, { type: 'image/png' });
 
   const findTextarea = () => [...document.querySelectorAll('textarea')].find((t) => t.value.includes(marker));
-  const linkCount = (v) => (v.match(/\]\(https?:\/\//g) || []).length;
+  // GitHub は ![..](url) ではなく <img src="https://github.com/user-attachments/..."> を挿入することがある
+  const linkCount = (v) => (v.match(/\]\(https?:\/\/|src="https?:\/\//g) || []).length;
+  let initial = '';
   // 'done' | 'uploading' | 'none'
+  //   uploading: 本文が変化した（GitHub が受け付けた）がアップロード完了前
   const state = (base) => {
     const v = findTextarea()?.value || '';
-    if (linkCount(v) > base) return 'done';
-    return /!\[Uploading /i.test(v) ? 'uploading' : 'none';
+    const busy = /Uploading/i.test(v);
+    if (linkCount(v) > base && !busy) return 'done';
+    return busy || v !== initial ? 'uploading' : 'none';
   };
   const waitFor = async (base, ms, until) => {
     for (let t = 0; t < ms; t += 250) {
@@ -84,7 +88,8 @@ async function attachScreenshot(dataUrl, marker) {
   for (let i = 0; i < 60 && !(ta = findTextarea()); i++) await sleep(250);
   if (!ta) return showFallback('本文欄が見つかりませんでした。');
 
-  const base = linkCount(ta.value);
+  initial = ta.value;
+  const base = linkCount(initial);
   const dispatch = (make) => {
     const el = findTextarea();
     const pos = el.value.indexOf(marker) + marker.length;
