@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <title>github-feedback 設定</title>
+  <style>
+    :root { color-scheme: light dark; }
+    body { font: 14px system-ui, "Segoe UI", "Hiragino Sans", Meiryo, sans-serif; max-width: 920px; margin: 32px auto; padding: 0 16px; }
+    h1 { font-size: 20px; }
+    h2 { font-size: 15px; margin-top: 28px; }
+    p.note { color: #59636e; font-size: 12px; margin: 4px 0 10px; }
+    input { width: 100%; padding: 6px 8px; border: 1px solid #d0d7de; border-radius: 6px; font: inherit; box-sizing: border-box; }
+    .field { display: grid; grid-template-columns: 160px 1fr; gap: 8px; align-items: center; margin: 8px 0; }
+    table { width: 100%; border-collapse: collapse; }
+    th { text-align: left; font-size: 12px; color: #59636e; font-weight: 600; padding: 4px; }
+    td { padding: 4px; }
+    td.del { width: 32px; }
+    button { padding: 6px 12px; border-radius: 6px; border: 1px solid #d0d7de; background: #f6f8fa; cursor: pointer; font: inherit; color: inherit; }
+    button.primary { background: #1f883d; border-color: #1f883d; color: #fff; }
+    .footer { margin-top: 24px; display: flex; gap: 12px; align-items: center; }
+    #status { color: #1f883d; }
+    @media (prefers-color-scheme: dark) {
+      input { background: #0d1117; border-color: #30363d; color: #e6edf3; }
+      button { background: #21262d; border-color: #30363d; }
+    }
+  </style>
+</head>
+<body>
+  <h1>github-feedback 設定</h1>
+
+  <h2>基本</h2>
+  <div class="field"><label for="githubBase">GitHub URL</label><input id="githubBase" placeholder="https://github.com"></div>
+  <div class="field"><label for="defaultRepo">デフォルトの起票先</label><input id="defaultRepo" placeholder="owner/repo"></div>
+  <div class="field"><label for="defaultLabels">デフォルトのラベル</label><input id="defaultLabels" placeholder="feedback"></div>
+  <p class="note">GitHub Enterprise Server の場合は GitHub URL を変更してください。ラベルは対象リポジトリで Triage 以上の権限があるときだけ反映されます。</p>
+
+  <h2>ホストごとの振り分け</h2>
+  <p class="note">上から順にホスト名（ポート付き）と照合し、最初に一致したルールを使います。<code>*</code> はワイルドカードです。<br>
+    例: <code>localhost:*</code> / <code>*.stg.example.com</code> / <code>d1234abcd.cloudfront.net</code></p>
+  <table>
+    <thead><tr><th>ホストのパターン</th><th>リポジトリ (owner/repo)</th><th>環境名</th><th>ラベル (カンマ区切り)</th><th></th></tr></thead>
+    <tbody id="rules"></tbody>
+  </table>
+  <p><button id="add">＋ ルールを追加</button></p>
+
+  <div class="footer">
+    <button id="save" class="primary">保存</button>
+    <span id="status"></span>
+  </div>
+
+  <script src="options.js"></script>
+</body>
+</html>
